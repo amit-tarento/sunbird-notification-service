@@ -12,6 +12,7 @@ public class EmailRequest {
   private String templateName;
   private String body;
   private Map<String, String> param;
+  private List<Map<String,String>> attachments;
 
   public String getSubject() {
     return subject;
@@ -69,6 +70,14 @@ public class EmailRequest {
     this.param = param;
   }
 
+  public List<Map<String,String>> getAttachments() {
+    return attachments;
+  }
+
+  public void setAttachments(List<Map<String,String>> attachments) {
+    this.attachments = attachments;
+  }
+
   public EmailRequest(
       String subject,
       List<String> to,
@@ -76,7 +85,8 @@ public class EmailRequest {
       List<String> bcc,
       String templateName,
       String body,
-      Map<String, String> param) {
+      Map<String, String> param,
+      List<Map<String,String>> attachments) {
     super();
     this.subject = subject;
     this.to = to;
@@ -85,6 +95,7 @@ public class EmailRequest {
     this.templateName = templateName;
     this.body = body;
     this.param = param;
+    this.attachments = attachments;
   }
 
   public EmailRequest() {

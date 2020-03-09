@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.Map;
 
 public class NotificationRequest {
 
@@ -14,6 +15,7 @@ public class NotificationRequest {
   /** configuration data needed for the notification */
   private Config config;
 
+  private List<Map<String,String>> attachments;
   /** required */
   private List<String> ids;
 
@@ -24,6 +26,14 @@ public class NotificationRequest {
   private ObjectMapper mapper = new ObjectMapper();
 
   public NotificationRequest() {}
+
+  public List<Map<String,String>> getAttachments() {
+    return attachments;
+  }
+
+  public void setAttachments(List<Map<String,String>> attachments) {
+    this.attachments = attachments;
+  }
 
   public String getMode() {
     return mode;

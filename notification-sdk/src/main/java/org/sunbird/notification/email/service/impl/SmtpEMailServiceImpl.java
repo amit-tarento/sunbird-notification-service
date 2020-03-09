@@ -9,6 +9,8 @@ import org.sunbird.notification.beans.EmailRequest;
 import org.sunbird.notification.email.Email;
 import org.sunbird.notification.email.service.IEmailService;
 
+import java.util.Collections;
+
 /** @author manzarul */
 public class SmtpEMailServiceImpl implements IEmailService {
   private static Logger logger = LogManager.getLogger(SmtpEMailServiceImpl.class);
@@ -33,12 +35,13 @@ public class SmtpEMailServiceImpl implements IEmailService {
           email.getFromEmail(),
           emailReq.getSubject(),
           emailReq.getBody(),
+          emailReq.getAttachments(),
           CollectionUtils.isEmpty(emailReq.getBcc()) ? emailReq.getTo() : emailReq.getBcc());
     } else if (CollectionUtils.isNotEmpty(emailReq.getCc())) {
-      return email.sendMail(
-          emailReq.getTo(), emailReq.getSubject(), emailReq.getBody(), emailReq.getCc());
+      return email.sendMailWithAttachment(
+          emailReq.getTo(), emailReq.getSubject(), emailReq.getBody(),emailReq.getAttachments(), emailReq.getCc());
     } else {
-      return email.sendMail(emailReq.getTo(), emailReq.getSubject(), emailReq.getBody());
+      return email.sendMailWithAttachment(emailReq.getTo(), emailReq.getSubject(), emailReq.getBody(),emailReq.getAttachments(), Collections.EMPTY_LIST);
     }
   }
 }

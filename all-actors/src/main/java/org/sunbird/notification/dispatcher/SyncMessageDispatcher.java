@@ -38,7 +38,8 @@ public class SyncMessageDispatcher {
             null,
             null,
             notificationRequest.getTemplate().getData(),
-            null);
+            null,
+            notificationRequest.getAttachments());
     boolean emailResponse = getEmailInstance().sendEmail(request);
     Response response = new Response();
     response.put(Constant.RESPONSE, emailResponse);

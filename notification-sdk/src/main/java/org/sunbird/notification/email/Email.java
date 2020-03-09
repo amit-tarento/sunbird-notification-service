@@ -1,6 +1,9 @@
 package org.sunbird.notification.email;
 
+import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -18,6 +21,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -156,21 +160,43 @@ public class Email {
    * @param emailList List of recipient emails
    * @param emailBody Text of email body
    * @param subject Subject of email
-   * @param filePath Path of attachment file
+   * @param attachments Path of attachment file
    */
-  public void sendAttachment(
-      List<String> emailList, String emailBody, String subject, String filePath) {
+  public boolean sendMailWithAttachment(
+          List<String> emailList, String emailBody, String subject, List<Map<String,String>> attachments, List<String> ccEmailList) {
+    boolean response = true;
     try {
       Session session = getSession();
       MimeMessage message = new MimeMessage(session);
       addRecipient(message, Message.RecipientType.TO, emailList);
+      addRecipient(message, Message.RecipientType.CC, ccEmailList);
       message.setSubject(subject);
-      Multipart multipart = createMultipartData(emailBody, filePath);
+      Multipart multipart = createMultipartData(emailBody);
+      if (CollectionUtils.isNotEmpty(attachments)) {
+        for (Map<String,String> attachment : attachments) {
+          addAttachment(multipart, attachment);
+        }
+      }
       setMessageAttribute(message, fromEmail, subject, multipart);
       sendEmail(session, message);
     } catch (Exception e) {
+      response = false;
       logger.error("Exception occured during email sending " + e, e);
     }
+    return response;
+  }
+
+  /**
+   * Send email (with attachment) and given body.
+   *
+   * @param emailList List of recipient emails
+   * @param emailBody Text of email body
+   * @param subject Subject of email
+   * @param filePaths Path of attachment file
+   */
+  public boolean sendMailWithAttachment(
+          List<String> emailList, String emailBody, String subject, List<Map<String,String>> filePaths) {
+    return sendMailWithAttachment(emailList, emailBody, subject, filePaths, Collections.EMPTY_LIST);
   }
 
   /**
@@ -182,13 +208,19 @@ public class Email {
    * @param bccList recipient bcc list
    * @return boolean
    */
-  public boolean sendEmail(String fromEmail, String subject, String body, List<String> bccList) {
+  public boolean sendEmail(String fromEmail, String subject, String body, List<Map<String,String>> attachments , List<String> bccList) {
     boolean sentStatus = true;
     try {
       Session session = getSession();
       MimeMessage message = new MimeMessage(session);
       addRecipient(message, Message.RecipientType.BCC, bccList);
-      setMessageAttribute(message, fromEmail, subject, body);
+      Multipart multipart = createMultipartData(body);
+      if (CollectionUtils.isNotEmpty(attachments)) {
+        for (Map<String,String> attachment : attachments) {
+          addAttachment(multipart, attachment);
+        }
+      }
+      setMessageAttribute(message, fromEmail, subject, multipart);
       sentStatus = sendEmail(session, message);
     } catch (Exception e) {
       sentStatus = false;
@@ -197,23 +229,27 @@ public class Email {
     return sentStatus;
   }
 
-  private Multipart createMultipartData(String emailBody, String filePath)
-      throws AddressException, MessagingException {
+  private Multipart createMultipartData(String emailBody)
+      throws MessagingException {
     BodyPart messageBodyPart = new MimeBodyPart();
     messageBodyPart.setContent(emailBody, "text/html; charset=utf-8");
     Multipart multipart = new MimeMultipart();
     multipart.addBodyPart(messageBodyPart);
-    DataSource source = new FileDataSource(filePath);
-    messageBodyPart = null;
-    messageBodyPart = new MimeBodyPart();
-    messageBodyPart.setDataHandler(new DataHandler(source));
-    messageBodyPart.setFileName(filePath);
-    multipart.addBodyPart(messageBodyPart);
     return multipart;
   }
 
+  private void addAttachment(Multipart multipart, Map<String,String> attachment) throws MessagingException, IOException {
+    if (MapUtils.isNotEmpty(attachment)) {
+      DataSource source = new FileDataSource(attachment.get("path"));
+      MimeBodyPart messageBodyPart = new MimeBodyPart();
+      messageBodyPart.setDataHandler(new DataHandler(source));
+      messageBodyPart.setFileName(attachment.get("name"));
+      multipart.addBodyPart(messageBodyPart);
+    }
+  }
+
   private void addRecipient(MimeMessage message, RecipientType type, List<String> recipient)
-      throws AddressException, MessagingException {
+      throws MessagingException {
     if (CollectionUtils.isEmpty(recipient)) {
       logger.info("Recipient list is empty or null ");
       return;
@@ -225,7 +261,7 @@ public class Email {
 
   private void setMessageAttribute(
       MimeMessage message, String fromEmail, String subject, String body)
-      throws AddressException, MessagingException {
+      throws MessagingException {
     message.setFrom(new InternetAddress(fromEmail));
     message.setSubject(subject, "utf-8");
     message.setContent(body, "text/html; charset=utf-8");
@@ -233,7 +269,7 @@ public class Email {
 
   private void setMessageAttribute(
       MimeMessage message, String fromEmail, String subject, Multipart multipart)
-      throws AddressException, MessagingException {
+      throws MessagingException {
     message.setFrom(new InternetAddress(fromEmail));
     message.setSubject(subject, "utf-8");
     message.setContent(multipart, "text/html; charset=utf-8");
